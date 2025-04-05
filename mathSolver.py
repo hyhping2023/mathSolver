@@ -3,7 +3,7 @@ from utils.qwen.model_utils import load_hf_lm_and_tokenizer, generate_completion
 from utils.qwen.utils import save_jsonl, construct_prompt
 from utils.qwen.parser import *
 from utils.qwen.trajectory import *
-from args import EvaluateParams
+from hyhping.mathSolver.args import EvaluateParams
 from openai import OpenAI
 import warnings
 
