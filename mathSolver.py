@@ -1,0 +1,129 @@
+from utils.qwen.python_executor import PythonExecutor
+from utils.qwen.model_utils import load_hf_lm_and_tokenizer, generate_completions
+from utils.qwen.utils import save_jsonl, construct_prompt
+from utils.qwen.parser import *
+from utils.qwen.trajectory import *
+from args import EvaluateParams
+from openai import OpenAI
+import warnings
+
+PROMPT = {
+    "cot":[
+            {"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},
+            {"role": "user", "content": None}
+        ],
+    "tool":[
+            {"role": "system", "content": "Please integrate natural language reasoning with programs to solve the problem above, and put your final answer within \\boxed{}."},
+            {"role": "user", "content": None}
+        ]
+}
+
+def is_multi_choice(answer):
+    for c in answer:
+        if c not in ["A", "B", "C", "D", "E"]:
+            return False
+    return True
+
+def math_query(query:str, args: EvaluateParams = EvaluateParams(),
+                vllm_port = 8000, data_name = ""):
+    assert isinstance(query, str), "query should be a string"
+    assert len(query) > 0, "query should not be empty"
+    
+    # vllm config
+    if not isinstance(vllm_port, str):
+        try:
+            open_api_base = "http://localhost:{}/v1".format(str(vllm_port))
+        except:
+            open_api_base = "http://localhost:8000/v1"
+    else:
+        open_api_base = "http://localhost:{}/v1".format(vllm_port)
+    open_appi_key = "EMPTY"
+    client = OpenAI(
+        base_url=open_api_base,
+        api_key=open_appi_key,
+    )
+
+    # message template
+    if "tool" in args.prompt_type:
+        executer = PythonExecutor(get_answer_from_stdout=True)
+        message_template = PROMPT["tool"]
+    elif "cot" in args.prompt_type:
+        executer = None
+        message_template = PROMPT["cot"]
+    else:
+        warnings.warn("Unsupported prompt type, please check the prompt type. Deafault to 'tool'.")
+        executer = PythonExecutor(get_answer_from_stdout=True)
+        message_template = PROMPT["tool"]
+    
+    # construct prompt
+    full_prompt = message_template
+    full_prompt[1]["content"] = query
+
+    # stop words constructing
+    stop_words = ["</s>", "<|im_end|>", "<|endoftext|>"]
+    if "cot" in args.prompt_type:
+        stop_words.append("\n\nQuestion:")
+    elif "tool" in args.prompt_type:
+        stop_words.extend(["\n\n---", "```output"])
+    else:
+        warnings.warn("Unsupported prompt type, please check the prompt type. Deafault to 'tool'.")
+        stop_words.append("\n\n---", "```output")
+
+    # get result from vllm server and try for some times
+    max_func_call = 1 if args.prompt_type == "cot" else 4
+    for epoch in range(max_func_call):
+        response = client.chat.completions.create(
+            messages=full_prompt,
+            model=args.model_name_or_path,
+            temperature=args.temperature,
+            max_tokens=args.max_tokens_per_call,
+            top_p=args.top_p,
+            stop=stop_words,
+        )
+
+        response = response.choices[0].message.content.strip()
+        full_prompt[1]["content"] += response # add response to the query prompt
+        end_prompt = full_prompt[1]["content"]
+        if "boxed" not in response and response.endswith("```"):
+            program = extract_program(response)
+        else: # "COT" situation or "TIR" finished
+            break
+        program_result = executer.apply(program)
+        result, report = program_result
+        exec_result = result if result else report
+        exec_result = f"\n```output\n{exec_result}\n```\n"
+        full_prompt[1]["content"] += exec_result
+        if epoch == max_func_call - 1:
+            full_prompt[1]["content"] += "\nReach max function call limit."
+
+    code = end_prompt.split(query)[-1].strip()
+    for stop_word in stop_words:
+        if stop_word in code:
+            code = code.split(stop_word)[0].strip()
+    if "tool" in args.prompt_type:
+        answer = end_prompt.split(query)[-1].strip()
+        for stop_word in stop_words:
+            if stop_word in answer:
+                answer = answer.split(stop_word)[-1].strip()
+        code = code.split("```")[0].strip()
+    else: # In COT situation, the 'code' is actually the thinking content
+        answer = code
+    answer = extract_answer(answer, data_name)
+    return code, answer
+    
+if __name__ == "__main__":
+    question = "A car travels 60 miles in 1 hour. How far will it travel in 3 hours?"
+    args = EvaluateParams()
+    args.model_name_or_path = "/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct/"
+    # args.prompt_type = "cot"
+    import json
+    test_template = "utils/test/template.jsonl"
+    with open(test_template, "r") as f:
+        for line in f:
+            test_data = json.loads(line)
+            question = test_data["question"]
+            thought, answer = math_query(question, args)
+            print("Question: ", question)
+            print("Thought: ", thought)
+            print("reference answer: ", test_data["pred"])
+            print("Answer: ", answer)
