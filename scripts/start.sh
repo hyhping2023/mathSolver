@@ -16,7 +16,7 @@ else
 fi
 
 # 使用的 GPU 设备（默认使用所有可用 GPU）
-CUDA_DEVICES="0,1,2,3"
+CUDA_DEVICES="4,5,6,7"
 
 # 启动服务
 echo "Starting VLLM service..."
@@ -41,7 +41,7 @@ if [ ! -d "$MODEL_PATH" ]; then
 fi
 
 # 启动 VLLM 服务
-export CUDA_VISIBLE_DEVICES="0,1,2,3"
+export CUDA_VISIBLE_DEVICES="4,5,6,7"
 TP=4
 MEMORY_UTILIZATION=0.9
 PORT=8001

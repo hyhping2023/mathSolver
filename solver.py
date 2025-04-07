@@ -17,16 +17,13 @@ logging.basicConfig(
     ]
 )
 
-query_classifier = QueryClassifier()
+query_classifier = QueryClassifier(model_path="")
 app = FastAPI()
 
 class Query(BaseModel):
     query: str
     query_type: str
-
-def send_query(query, query_type = "", host_url="http://127.0.0.1:8000"):
-    message = {"query": query, "query_type": query_type}
-    return requests.post(f"{host_url}/query", json=message).json()['result']
+    query_args: dict
 
 @app.post("/query")
 def query(Query: Query):
@@ -48,21 +45,35 @@ def query(Query: Query):
     logging.info(f"Received query: {Query}")
     query = Query.query
     query_type = Query.query_type
+    query_args = Query.query_args
     if query_type == "classifier":
         query_type = query_classifier(query)
         logging.info(f"Query type: {query_type}")
     elif query_type not in ["math", "search"]:
         query_type = query_classifier(query)
         logging.info(f"Query type: {query_type}")
+    if query_args is None:
+        logging.warning("query_args is None, using template values")
+        if query_type == "search":
+            query_args = {
+                "topk": 3,
+                "return_scores": True
+            }
+        else:
+            query_args = {
+                "prompt_type": "tool-integrated",
+                "model_name_or_path": "/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct"
+            }
     if query_type == "math":
         args = EvaluateParams()
-        args.prompt_type = "tool-integrated"
-        args.model_name_or_path = "/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct/"
+        args.prompt_type = query_args["prompt_type"]
+        args.model_name_or_path = query_args["model_name_or_path"]
         result = math_query(query, args)
         return {"result": result}
     elif query_type == "search":
-        result = search(query)
-        return {"result": result}
+        args = Query.query_args
+        result = search(query, topk=args["topk"], return_scores=args["return_scores"])
+        return {"result": result["passages"], "scores": result["scores"]} if args["return_scores"] else {"result": result["passages"]}
     else:
         logging.info(f"Unknown query type: {query_type}")
         return {"result": "Unknown query type"}
