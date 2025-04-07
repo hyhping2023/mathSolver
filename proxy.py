@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 app = FastAPI()
 host = "10.120.20.225"
-port = 8000
+port = 9000
 
 @app.get("/query")
 def proxy(message):
