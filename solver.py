@@ -29,7 +29,7 @@ class Query(BaseModel):
     query_args: dict
 
 @app.post("/query")
-def query(Query: Query):
+async def query(Query: Query):
     """
     Receive a query and respond with the result.
     
@@ -72,7 +72,7 @@ def query(Query: Query):
         args.prompt_type = query_args["prompt_type"]
         args.model_name_or_path = query_args["model_name_or_path"]
         result = math_query(query, args)
-        return {"result": result}
+        return {"result": result[0], 'answer': result[1]}
     elif query_type == "search":
         args = Query.query_args
         result = search(query, topk=args["topk"], return_scores=args["return_scores"])

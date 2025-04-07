@@ -277,7 +277,7 @@ class DenseRetriever(BaseRetriever):
         if return_score:
             return results, scores
         else:
-            return results
+            return results, None
 
 def get_retriever(config):
     if config.retrieval_method == "bm25":
@@ -381,7 +381,9 @@ def retrieve_endpoint(request: QueryRequest):
                 combined.append({"document": doc, "score": score})
             resp.append(combined)
         else:
-            resp.append(single_result)
+            for doc in single_result:
+                # Only document is returned
+                resp.append({"document": doc})
     return {"result": resp}
 
 

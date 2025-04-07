@@ -31,17 +31,19 @@ def send_query(query, query_type = "", query_args = None):
             }
     
     Returns:
-        str: The result from the server.
+        dict: The result of the query.
+        'result': The result of the query.
+        'scores': The scores of the query.
     """
     message = {"query": query, "query_type": query_type, "query_args": query_args}
-    return requests.post("http://10.120.16.175:30027/query", json=message).json()['result']
+    return requests.post("http://0.0.0.0:9000/query", json=message).json()
 
 if __name__ == "__main__":
     query = "What is the integral of x^2 from 0 to 1?"
     query_type = ""
-    result = send_query(query, query_type)
+    result = send_query(query, query_type, {"prompt_type": "tool-integrated", "model_name_or_path": "/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct/"})
     print(result)
     query = "What is the capital of France?"
     query_type = ""
-    result = send_query(query, query_type)
+    result = send_query(query, query_type, {"topk": 5, "return_scores": False})
     print(result)
