@@ -34,7 +34,7 @@ def send_query(query, query_type = "", query_args = None):
         str: The result from the server.
     """
     message = {"query": query, "query_type": query_type, "query_args": query_args}
-    return requests.post("http://10.120.20.225:8000/query", json=message).json()['result']
+    return requests.post("http://10.120.16.175:30027/query", json=message).json()['result']
 
 if __name__ == "__main__":
     query = "What is the integral of x^2 from 0 to 1?"

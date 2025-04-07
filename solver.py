@@ -17,7 +17,10 @@ logging.basicConfig(
     ]
 )
 
-query_classifier = QueryClassifier(model_path="")
+query_classifier = QueryClassifier(model_path="/data/hyhping/BAAI/bge-m3",
+                                        svm_path="outputs/model", 
+                                   model_dir="./outputs/model", 
+                                   device=["cuda:4"])
 app = FastAPI()
 
 class Query(BaseModel):
@@ -79,4 +82,4 @@ def query(Query: Query):
         return {"result": "Unknown query type"}
     
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=9000)
