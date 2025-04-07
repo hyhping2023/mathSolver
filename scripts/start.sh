@@ -44,6 +44,7 @@ fi
 export CUDA_VISIBLE_DEVICES="0,1,2,3"
 TP=4
 MEMORY_UTILIZATION=0.9
-vllm serve $MODEL_PATH -tp $TP --gpu-memory-utilization $MEMORY_UTILIZATION
+PORT=8001
+vllm serve $MODEL_PATH -tp $TP --gpu-memory-utilization $MEMORY_UTILIZATION --port $PORT
 
 echo "VLLM service started successfully"

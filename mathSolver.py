@@ -3,9 +3,19 @@ from utils.qwen.model_utils import load_hf_lm_and_tokenizer, generate_completion
 from utils.qwen.utils import save_jsonl, construct_prompt
 from utils.qwen.parser import *
 from utils.qwen.trajectory import *
-from hyhping.mathSolver.args import EvaluateParams
+from args import EvaluateParams
 from openai import OpenAI
-import warnings
+import logging
+
+# 配置日志记录器
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # 输出到控制台
+        logging.FileHandler('app.log')  # 输出到文件
+    ]
+)
 
 PROMPT = {
     "cot":[
@@ -25,7 +35,20 @@ def is_multi_choice(answer):
     return True
 
 def math_query(query:str, args: EvaluateParams = EvaluateParams(),
-                vllm_port = 8000, data_name = ""):
+                vllm_port = 8001, data_name = ""):
+    """
+    Use the vllm server to get the solution to the query and execute the program.
+
+    Parameters:
+    query (str): The math query to be solved.
+    args (EvaluateParams): The parameters for evaluation.
+    vllm_port (int): The port of the vllm server.
+    data_name (str): The name of the dataset.
+
+    Returns:
+    code (str): The code of the solution or the cot of the solution.
+    answer (str): The answer of the solution.
+    """
     assert isinstance(query, str), "query should be a string"
     assert len(query) > 0, "query should not be empty"
     
@@ -34,7 +57,7 @@ def math_query(query:str, args: EvaluateParams = EvaluateParams(),
         try:
             open_api_base = "http://localhost:{}/v1".format(str(vllm_port))
         except:
-            open_api_base = "http://localhost:8000/v1"
+            open_api_base = "http://localhost:8001/v1"
     else:
         open_api_base = "http://localhost:{}/v1".format(vllm_port)
     open_appi_key = "EMPTY"
@@ -51,7 +74,7 @@ def math_query(query:str, args: EvaluateParams = EvaluateParams(),
         executer = None
         message_template = PROMPT["cot"]
     else:
-        warnings.warn("Unsupported prompt type, please check the prompt type. Deafault to 'tool'.")
+        logging.warn("Unsupported prompt type, please check the prompt type. Deafault to 'tool'.")
         executer = PythonExecutor(get_answer_from_stdout=True)
         message_template = PROMPT["tool"]
     
@@ -66,7 +89,7 @@ def math_query(query:str, args: EvaluateParams = EvaluateParams(),
     elif "tool" in args.prompt_type:
         stop_words.extend(["\n\n---", "```output"])
     else:
-        warnings.warn("Unsupported prompt type, please check the prompt type. Deafault to 'tool'.")
+        logging.warn("Unsupported prompt type, please check the prompt type. Deafault to 'tool'.")
         stop_words.append("\n\n---", "```output")
 
     # get result from vllm server and try for some times
@@ -117,7 +140,7 @@ if __name__ == "__main__":
     args.model_name_or_path = "/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct/"
     # args.prompt_type = "cot"
     import json
-    test_template = "utils/test/template.jsonl"
+    test_template = "data/template.jsonl"
     with open(test_template, "r") as f:
         for line in f:
             test_data = json.loads(line)
