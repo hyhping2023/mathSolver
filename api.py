@@ -1,7 +1,7 @@
 import requests
-import logging
+from typing import *
 
-async def send_query(query, query_type = "", query_args = None):
+def send_query(query:list, query_type:Union[str, List[str]]=['classifier'], query_args = None):
     """
     Send a query to the server and get the result.
     
@@ -39,28 +39,35 @@ async def send_query(query, query_type = "", query_args = None):
                 'result': The result of the query.
                 'scores': The scores of the query.
     """
+    if isinstance(query_type, str):
+        query_type = [query_type] * len(query)
     message = {"query": query, "query_type": query_type, "query_args": query_args}
-    # return requests.post("http://0.0.0.0:9000/query", json=message).json()
-    return requests.post("http://10.120.16.175:30027/query", json=message).json()
+    return requests.post("http://0.0.0.0:9000/query", json=message).json()
+    # return requests.post("http://10.120.16.175:30027/query", json=message).json()
+
 
 if __name__ == "__main__":
-    import time
+    import time, json
     start_time = time.time()
-    query = "What is the integral of x^2 from 0 to 1?"
-    query_type = ""
-    result = send_query(query, query_type, {"prompt_type": "tool-integrated", "model_name_or_path": "/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct/"})
-    # print(result)
-    query = "What is the integral of x^2 from 0 to 1?"
-    query_type = ""
-    result = send_query(query, query_type, {"prompt_type": "tool-integrated", "model_name_or_path": "/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct/"})
-    # print(result)
-    query = "What is the integral of x^2 from 0 to 1?"
-    query_type = ""
-    result = send_query(query, query_type, {"prompt_type": "tool-integrated", "model_name_or_path": "/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct/"})
-    # print(result)
-    query = "What is the capital of France?"
-    query_type = ""
-    result = send_query(query, query_type, {"topk": 5, "return_scores": False})
-    print(result)
+    # test_template = "data/template.jsonl"
+    # questions = []
+    # with open(test_template, "r") as f:
+    #     for line in f:
+    #         test_data = json.loads(line)
+    #         questions.append(test_data["question"])
+    # queries = questions
+
+    queries = ["What is the capital of France?", "If there are 10 eggs in a basket, and there are twice as many eggs in a second basket, how many eggs are in both baskets put together?"] * 10
+    
+    query_types = ["search", "math"] * 10
+    query_types = ['classifier']
+    query_args = {
+        "prompt_type": "tool-integrated",
+        "topk": 5,
+        "return_scores": True
+    }
+    results = send_query(queries, query_types, query_args)
+    for result in results:
+        print(result) 
     end_time = time.time()
     print(f"Time taken: {end_time - start_time} seconds")

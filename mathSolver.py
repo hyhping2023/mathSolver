@@ -8,14 +8,14 @@ from openai import OpenAI
 import logging
 
 # 配置日志记录器
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),  # 输出到控制台
-        logging.FileHandler('app.log')  # 输出到文件
-    ]
-)
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format='%(asctime)s - %(levelname)s - %(message)s',
+#     handlers=[
+#         logging.StreamHandler(),  # 输出到控制台
+#         logging.FileHandler('app.log')  # 输出到文件
+#     ]
+# )
 
 PROMPT = {
     "cot":[
@@ -97,6 +97,7 @@ def math_query(query:str, args: EvaluateParams = EvaluateParams(),
     for epoch in range(max_func_call):
         response = client.chat.completions.create(
             messages=full_prompt,
+            n=args.n_sampling,
             model=args.model_name_or_path,
             temperature=args.temperature,
             max_tokens=args.max_tokens_per_call,
@@ -111,7 +112,7 @@ def math_query(query:str, args: EvaluateParams = EvaluateParams(),
             program = extract_program(response)
         else: # "COT" situation or "TIR" finished
             break
-        program_result = executer.apply(program)
+        program_result = executer.sync_apply(program)
         result, report = program_result
         exec_result = result if result else report
         exec_result = f"\n```output\n{exec_result}\n```\n"
@@ -132,21 +133,55 @@ def math_query(query:str, args: EvaluateParams = EvaluateParams(),
     else: # In COT situation, the 'code' is actually the thinking content
         answer = code
     answer = extract_answer(answer, data_name)
-    return code, answer
+    return (code, answer)
+    
     
 if __name__ == "__main__":
+    set_seed(0)
     question = "A car travels 60 miles in 1 hour. How far will it travel in 3 hours?"
     args = EvaluateParams()
     args.model_name_or_path = "/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct/"
+    args.max_tokens_per_call = 2048
     # args.prompt_type = "cot"
     import json
-    test_template = "data/template.jsonl"
+    test_template = "/home/asc1/hyhping/Qwen2.5-Math/evaluation/outputs/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct/math_eval/aime24/test_tool-integrated_-1_seed0_t0.0_s0_e-1.jsonl"
+    
+    import multiprocessing as mp
+    pool = mp.Pool(processes=64)
+    tasks = []
+    reference_answer = []
+    reference_cot = []
+    correct_answer = []
     with open(test_template, "r") as f:
+        num = 0
         for line in f:
             test_data = json.loads(line)
             question = test_data["question"]
-            thought, answer = math_query(question, args)
-            print("Question: ", question)
-            print("Thought: ", thought)
-            print("reference answer: ", test_data["pred"])
-            print("Answer: ", answer)
+            # math_query(question, args)
+            tasks.append(pool.apply_async(math_query, args=(question, args, )))
+            reference_answer.append(test_data["pred"][0])
+            reference_cot.append(test_data['code'][0])
+            correct_answer.append(test_data["gt"])
+            # num += 1
+            # if num>100:
+            #     break
+    pool.close()
+    pool.join()
+    acc = 0
+    ref = 0
+    for i,result in enumerate(tasks):
+        code, answer = result.get()
+        if answer != reference_answer[i]:
+            print(answer, reference_answer[i], correct_answer[i])
+        else:
+            ref += 1
+        if answer == correct_answer[i]:
+            acc += 1
+    print("acc: ", acc/len(tasks))
+    print("ref: ", ref/len(tasks))
+            # print("current code: ", code)
+            # print("reference code: ", reference_cot[i])
+            # print("Question: ", question)
+            # print("Thought: ", thought)
+            # print("reference answer: ", test_data["pred"])
+            # print("Answer: ", answer)

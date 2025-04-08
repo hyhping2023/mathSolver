@@ -85,7 +85,7 @@ class PythonExecutor:
         self.answer_symbol = get_answer_symbol
         self.answer_expr = get_answer_expr
         self.get_answer_from_stdout = get_answer_from_stdout
-        self.pool = Pool(multiprocess.cpu_count())
+        # self.pool = Pool(multiprocess.cpu_count())
         self.timeout_length = timeout_length
 
     def process_generation_to_code(self, gens: str):
@@ -146,6 +146,29 @@ class PythonExecutor:
         if len(s) > max_length:
             s = s[:half] + "..." + s[-half:]
         return s
+    
+    def sync_apply(self, code):
+        code = self.process_generation_to_code([code])[0]
+
+        # with ProcessPool(max_workers=min(len(all_code_snippets), os.cpu_count())) as pool:
+        try:
+            if "print(" in code[-1]:
+                program_io = io.StringIO()
+                with redirect_stdout(program_io):
+                    self.runtime.exec_code('\n'.join(code))
+                program_io.seek(0)
+                result = program_io.read()
+            else:
+                print(code)
+                self.runtime.exec_code('\n'.join(code[:-1]))
+                result = self.runtime.eval_code(code[-1])
+            report = "Done"
+        except:
+            result = ''
+            report = traceback.format_exc().split('\n')[-2]
+
+        return [result, report]
+
 
     def batch_apply(self, batch_code):
         all_code_snippets = self.process_generation_to_code(batch_code)

@@ -41,3 +41,26 @@ class EvaluateParams:
         self.top_p = (
             1 if self.temperature == 0 else self.top_p
         )  # top_p must be 1 when using greedy sampling (vllm)
+
+
+PROMPT = {
+    "cot":[
+            {"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},
+            {"role": "user", "content": None}
+        ],
+    "tool":[
+            {"role": "system", "content": "Please integrate natural language reasoning with programs to solve the problem above, and put your final answer within \\boxed{}."},
+            {"role": "user", "content": None}
+        ]
+}
+
+PROMPT_BATCH ={
+    "cot":[
+        "<|im_start|>system\nPlease reason step by step, and put your final answer within \\boxed{}.<|im_end|>\n<|im_start|>user\n",
+        "<|im_end|>\n<|im_start|>assistant\n"
+        ],
+    "tool":[
+        "<|im_start|>system\nPlease integrate natural language reasoning with programs to solve the problem above, and put your final answer within \\boxed{}.<|im_end|>\n<|im_start|>user\n",
+        "<|im_end|>\n<|im_start|>assistant\n"
+        ],
+}
