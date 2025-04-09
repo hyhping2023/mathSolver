@@ -11,8 +11,8 @@ host = "10.120.20.225"
 port = 9000
 
 class Message(BaseModel):
-    query: str
-    query_type: str
+    query: list
+    query_type: list
     query_args: dict
 
 @app.post("/query")
