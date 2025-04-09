@@ -42,8 +42,8 @@ def send_query(query:list, query_type:Union[str, List[str]]=['classifier'], quer
     if isinstance(query_type, str):
         query_type = [query_type] * len(query)
     message = {"query": query, "query_type": query_type, "query_args": query_args}
-    return requests.post("http://0.0.0.0:9000/query", json=message).json()
-    # return requests.post("http://10.120.16.175:30027/query", json=message).json()
+    # return requests.post("http://0.0.0.0:9000/query", json=message).json()
+    return requests.post("http://10.120.16.175:30027/query", json=message).json()
 
 
 if __name__ == "__main__":
