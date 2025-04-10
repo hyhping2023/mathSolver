@@ -23,7 +23,7 @@ logging.basicConfig(
 query_classifier = QueryClassifier(model_path="/data/hyhping/BAAI/bge-m3",
                                         svm_path="outputs/model", 
                                    model_dir="./outputs/model", 
-                                   device=["cuda:4"])
+                                   device=["cuda:3"])
 app = FastAPI()
 
 def vllm_query(query:list, prompt_type:str="tool-integrated", max_tokens_per_call:int=4096, 
@@ -110,9 +110,10 @@ def query(Query: Query):
     # merge the results according to the index
     results = [None] * len(query)
     for i, result in enumerate(math_results):
-        results[math_index[i]] = {"result": result[0]+f" After confirmation using Python, the final answer is {result[1]}.", 'answer': result[1]}
+        results[math_index[i]] = {"result": result[0]+f" After confirmation using Python, the final answer is {result[1]}.", "extra":{"query_type":'math', 'answer': result[1]}}
     for i in range(len(search_results['passages'])):
-        results[search_index[i]] = {"result": search_results["passages"][i], "scores": search_results["scores"][i]} if query_args["return_scores"] else {"result": search_results["passages"][i]}
+        results[search_index[i]] = {"result": search_results["passages"][i], "extra":{"query_type":'search', "scores": search_results["scores"][i]}} \
+        if query_args["return_scores"] else {"result": search_results["passages"][i], "extra":{"query_type":'search'}}
     return results
     # if query_type == "math":
     #     args = EvaluateParams()

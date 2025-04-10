@@ -34,10 +34,14 @@ def send_query(query:list, query_type:Union[str, List[str]]=['classifier'], quer
         dict: The result of the query.
             for math query, the result will contains:
                 'result': The chain of thoughts.
-                'answer': The final answer.
+                'extra': contains 2 elements:
+                    'query_type': The type of the query.
+                    'answer': The final answer.
             for seach query, the result will contains:
                 'result': The result of the query.
-                'scores': The scores of the query.
+                'extra': contains 2 elements:
+                    'query_type': The type of the query.
+                    'scores': The scores of the query, which is a list.
     """
     if isinstance(query_type, str):
         query_type = [query_type] * len(query)
@@ -57,9 +61,9 @@ if __name__ == "__main__":
     #         questions.append(test_data["question"])
     # queries = questions
 
-    queries = ["What is the capital of France?", "If there are 10 eggs in a basket, and there are twice as many eggs in a second basket, how many eggs are in both baskets put together?"] * 10
+    queries = ["What is the capital of Russia?", "If there are 8 eggs in a basket, and there are twice as many eggs in a second basket, how many eggs are in both baskets put together?"] * 100
     
-    query_types = ["search", "math"] * 10
+    query_types = ["search", "math"] * 100
     query_types = ['classifier']
     query_args = {
         "prompt_type": "tool-integrated",

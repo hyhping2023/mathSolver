@@ -1,0 +1,9 @@
+[
+    {"sample":"<think>There are 15 trees in the grove. Grove workers will plant trees in the grove today. After they are done, there will be 21 trees. I need to think of how many trees did the grove workers plant today?</think>
+    <query>There are 15 trees originally and there are 21 trees after some more were planted today. How many trees did the grove workers plant today?</query>
+    <information>There are 15 trees originally. Then there were 21 trees after some more were planted. So there must have been 21 - 15 = 6. The answer is 6.</information>
+    <think>No additional information needed, moving to the next step</think>
+    <think>I think I have the answer.</think>
+    <answer>6</answer>"},
+    
+]

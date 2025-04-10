@@ -25,6 +25,7 @@ llm = LLM(
     tensor_parallel_size=4,
     pipeline_parallel_size=1,
     trust_remote_code=True,
+    gpu_memory_utilization=0.8
 )
 
 app = FastAPI()
