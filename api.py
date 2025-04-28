@@ -13,7 +13,7 @@ def send_query(query:list, query_type:Union[str, List[str]]=['classifier'], quer
     For query_args, the following keys are expected:
         if your query typr is 'math', the query_args should be:
             query_args = {
-                "prompt_type": "tool-integrated", or "cot"
+                "prompt_type": "tool-integrated", or "cot", or "calculator"
                 "model_name_or_path": "path/to/your/model"
             }
         if your query type is 'search', the query_args should be:
@@ -24,10 +24,10 @@ def send_query(query:list, query_type:Union[str, List[str]]=['classifier'], quer
         if your query type is 'classifier', the query_args should be:
             you should specify all above, which is:
             query_args = {
-                "prompt_type": "tool-integrated", or "cot"
-                "model_name_or_path": "path/to/your/model",
+                "prompt_type": "tool-integrated", or "cot", or "calculator"
                 "topk": int,
-                "return_scores": bool
+                "return_scores": bool,
+                "only_answer": bool
             }
     
     Returns:
@@ -61,17 +61,30 @@ if __name__ == "__main__":
     #         questions.append(test_data["question"])
     # queries = questions
 
-    queries = ["What is the capital of Russia?", "If there are 8 eggs in a basket, and there are twice as many eggs in a second basket, how many eggs are in both baskets put together?"] * 100
+    # queries = ["What is the capital of France?", "If there are 8 eggs in a basket, and there are twice as many eggs in a second basket, how many eggs are in both baskets put together?"] * 100
     
-    query_types = ["search", "math"] * 100
-    query_types = ['classifier']
+    # query_types = ["search", "math"] * 100
+    # query_types = ['classifier']
+    # query_args = {
+    #     "prompt_type": "tool-integrated",
+    #     "topk": 5,
+    #     "return_scores": True,
+    #     "only_answer": True,
+    # }
+    # results = send_query(queries, query_types, query_args)
+    # for result in results:
+    #     print(result) 
+
+    queries = ["\\frac{1}{2} + \\sqrt{4}", "7 * \\frac{1}{2}"] * 100
+    query_types = ["math"] * 200
     query_args = {
-        "prompt_type": "tool-integrated",
+        "prompt_type": "calculator",
         "topk": 5,
-        "return_scores": True
+        "return_scores": True,
+        "only_answer": True,
     }
     results = send_query(queries, query_types, query_args)
     for result in results:
-        print(result) 
+        print(result)
     end_time = time.time()
     print(f"Time taken: {end_time - start_time} seconds")

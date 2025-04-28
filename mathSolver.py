@@ -60,10 +60,10 @@ def math_query(query:str, args: EvaluateParams = EvaluateParams(),
             open_api_base = "http://localhost:8001/v1"
     else:
         open_api_base = "http://localhost:{}/v1".format(vllm_port)
-    open_appi_key = "EMPTY"
+    open_api_key = "EMPTY"
     client = OpenAI(
         base_url=open_api_base,
-        api_key=open_appi_key,
+        api_key=open_api_key,
     )
 
     # message template

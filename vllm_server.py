@@ -21,8 +21,8 @@ logging.basicConfig(
 )
 
 llm = LLM(
-    model="/data/hyhping/Qwen/Qwen2.5-Math-7B-Instruct",
-    tensor_parallel_size=4,
+    model="/data2/share/hanxu/hyh/Qwen/Qwen2.5-Math-7B-Instruct",
+    tensor_parallel_size=2,
     pipeline_parallel_size=1,
     trust_remote_code=True,
     gpu_memory_utilization=0.8

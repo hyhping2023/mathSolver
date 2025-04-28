@@ -13,6 +13,8 @@ def search(query: list, topk: int = 3, return_scores: bool = True):
     Returns:
         dict: A dictionary with the topk results. If return_scores is True, the dictionary will contain two keys: "passages" and "scores". Otherwise, it will only contain the "passages" key. The value of "passages" is a string containing the title and text of each passage, separated by a newline. The value of "scores" is a list of the scores for the results, in descending order of relevance.
     """
+    if len(query) <= 0:
+        return {"passages": [], "scores": []}
     payload = {
             "queries": query,
             "topk": topk,

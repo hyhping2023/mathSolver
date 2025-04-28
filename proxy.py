@@ -7,8 +7,9 @@ from pydantic import BaseModel
 from typing import Dict, Any
 
 app = FastAPI()
-host = "10.120.20.225"
-port = 9000
+# host = "10.120.20.225"
+host = "0.0.0.0"
+port = 8000
 
 class Message(BaseModel):
     query: list

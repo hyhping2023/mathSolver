@@ -9,7 +9,7 @@ from typing import *
 from utils.qwen.parser import set_seed
 import multiprocessing as mp
 import requests
-# from vllm import LLM
+from math_calculator import math_calculator
 set_seed(0)
 # 配置日志记录器
 logging.basicConfig(
@@ -20,14 +20,25 @@ logging.basicConfig(
     ]
 )
 
-query_classifier = QueryClassifier(model_path="/data/hyhping/BAAI/bge-m3",
+query_classifier = QueryClassifier(model_path="/data2/share/hanxu/hyh/BAAI/bge-m3",
                                         svm_path="outputs/model", 
                                    model_dir="./outputs/model", 
-                                   device=["cuda:3"])
+                                   device=["cuda:0"])
 app = FastAPI()
 
-def vllm_query(query:list, prompt_type:str="tool-integrated", max_tokens_per_call:int=4096, 
+def math_query(query:list, prompt_type:str="tool-integrated", max_tokens_per_call:int=4096, 
                temperature=0, n_sampling=1, top_p=1):
+    if len(query) <= 0:
+        return []
+    if prompt_type == "calculator":
+        pool = mp.Pool(processes=8)
+        tasks = [pool.apply_async(math_calculator, args=(q,)) for q in query]
+        pool.close()
+        pool.join()
+        math_calculator_results = [task.get() for task in tasks]
+        return math_calculator_results
+    
+        return [math_calculator(q) for q in query]
     args = {
         "prompt_type": prompt_type,
         "temperature": temperature,
@@ -72,6 +83,8 @@ def query(Query: Query):
     query = Query.query
     query_type = Query.query_type
     query_args = Query.query_args
+    if query_args['prompt_type'] == "calculator":
+        query_args['only_answer'] = True
     assert len(query) == len(query_type) or len(query_type) == 1, "query and query_type should have the same length"
     if len(query_type) == 1:
         query_type = query_type * len(query)
@@ -105,12 +118,18 @@ def query(Query: Query):
     # pool.close()
     # pool.join()
     # math_results = [task.get() for task in tasks]
-    math_results = vllm_query(math_tasks, prompt_type=query_args["prompt_type"])
+    math_results = math_query(math_tasks, prompt_type=query_args["prompt_type"])
     search_results = search(search_tasks, topk=query_args["topk"], return_scores=query_args["return_scores"])
     # merge the results according to the index
     results = [None] * len(query)
     for i, result in enumerate(math_results):
-        results[math_index[i]] = {"result": result[0]+f" After confirmation using Python, the final answer is {result[1]}.", "extra":{"query_type":'math', 'answer': result[1]}}
+        if query_args['only_answer']:
+            if query_args['prompt_type'] == "calculator":
+                results[math_index[i]] = {"result": "The result is " + result, "extra":{"query_type":'math', 'answer': result}}
+            else:
+                results[math_index[i]] = {"result": "The result is " + result[1], "extra":{"query_type":'math', 'answer': result[1]}}
+        else:
+            results[math_index[i]] = {"result": result[0]+f" After confirmation using Python, the final answer is {result[1]}.", "extra":{"query_type":'math', 'answer': result[1]}}
     for i in range(len(search_results['passages'])):
         results[search_index[i]] = {"result": search_results["passages"][i], "extra":{"query_type":'search', "scores": search_results["scores"][i]}} \
         if query_args["return_scores"] else {"result": search_results["passages"][i], "extra":{"query_type":'search'}}
@@ -130,4 +149,4 @@ def query(Query: Query):
     #     return {"result": "Unknown query type"}
     
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=9000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
